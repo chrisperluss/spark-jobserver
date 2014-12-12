@@ -277,7 +277,7 @@ To pass settings directly to the sparkConf that do not use the "spark." prefix "
     spark.context-settings {
         spark.cores.max = 10
         passthrough {
-          some.custom.hadoop.config = 192.168.1.1
+          some.custom.hadoop.config = "192.168.1.1"
         }
     }
 
