@@ -12,9 +12,7 @@ import spark.jobserver.SparkWebUiActor.{SparkWorkersErrorInfo, SparkWorkersInfo,
 import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
 import spark.jobserver.io.JobInfo
-import spray.http.HttpResponse
-import spray.http.MediaTypes
-import spray.http.StatusCodes
+import spray.http._
 import spray.httpx.SprayJsonSupport.sprayJsonMarshaller
 import spray.json.DefaultJsonProtocol._
 import spray.routing.{ HttpService, Route, RequestContext }
@@ -363,8 +361,16 @@ class WebApi(system: ActorSystem, config: Config, port: Int,
     case item         => Map(ResultKey -> item)
   }
 
-  def resultToTable(result: Any): Map[String, Any] = {
-    Map(StatusKey -> "OK", ResultKey -> result)
+  def resultToTable(result: Any):Either[HttpEntity, Map[String, Any]] = {
+    import org.json4s._
+    result match {
+      case ast: JValue => {
+        val wrappedAST = JObject(JField(StatusKey, JString("OK")) :: JField(ResultKey, ast) :: Nil)
+        val json = jackson.JsonMethods.compact(wrappedAST)
+        Left(HttpEntity(ContentTypes.`application/json`, json))
+      }
+      case _ => Right(Map(StatusKey -> "OK", ResultKey -> result))
+    }
   }
 
   def formatException(t: Throwable): Any =
